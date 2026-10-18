@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ソフトボール道場</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:#0d1117;color:#fff;font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;user-select:none;-webkit-user-select:none;touch-action:manipulation;overflow:hidden}
+#app{max-width:480px;margin:0 auto;height:100dvh;display:flex;flex-direction:column;padding:calc(env(safe-area-inset-top) + 8px) 12px calc(env(safe-area-inset-bottom) + 10px);position:relative}
+.screen{display:none;flex:1;flex-direction:column;min-height:0}
+.screen.on{display:flex}
+h1{margin:6px 0 2px;font-size:30px;text-align:center;letter-spacing:2px;background:linear-gradient(90deg,#ffd54f,#ff7043);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{text-align:center;color:#9aa4b2;font-size:13px;margin-bottom:10px}
+.hero{display:flex;justify-content:center;margin:4px 0 10px}
+.face{width:96px;height:96px;border-radius:50%;border:4px solid #ffd54f;background:#1f2937;display:flex;align-items:center;justify-content:center;font-size:46px;overflow:hidden;flex:none}
+.face img{width:100%;height:100%;object-fit:cover;object-position:50% 25%;display:block}
+.levels{display:flex;flex-direction:column;gap:8px;overflow:auto;padding-bottom:6px}
+.lv{display:flex;align-items:center;gap:12px;border:0;border-radius:14px;padding:12px 14px;color:#fff;text-align:left;font-size:16px;cursor:pointer;background:#161b22;border-left:8px solid var(--c);box-shadow:0 2px 0 #000}
+.lv:active{transform:translateY(2px);box-shadow:none}
+.lv b{font-size:20px;min-width:52px;color:var(--c)}
+.lv span{flex:1;font-size:14px}
+.lv small{color:#9aa4b2;font-size:11px;white-space:nowrap}
+.hud{display:flex;align-items:center;gap:8px;font-weight:700}
+.hud button{background:#222a35;border:0;color:#fff;border-radius:10px;padding:8px 10px;font-size:14px}
+.hud .lvl{font-size:13px;color:#ffd54f}
+.hud .sc{margin-left:auto;font-size:22px;font-variant-numeric:tabular-nums}
+.combo{height:24px;margin:4px 0;display:flex;align-items:center;gap:8px}
+.cbar{flex:1;height:8px;background:#222a35;border-radius:4px;overflow:hidden}
+.cbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ffd54f,#ff5252);transition:width .25s}
+.ctext{font-size:15px;font-weight:800;color:#ffd54f;min-width:96px;text-align:right}
+.coach{display:flex;gap:10px;align-items:center;margin:2px 0 6px}
+.coach .face{width:58px;height:58px;font-size:28px;border-width:3px}
+.bubble{flex:1;background:#1f2937;border-radius:14px;padding:8px 12px;font-size:13px;line-height:1.45;min-height:50px;display:flex;align-items:center;position:relative}
+.bubble:before{content:"";position:absolute;left:-8px;top:50%;margin-top:-7px;border:7px solid transparent;border-right-color:#1f2937;border-left:0}
+.field{flex:1;min-height:0;width:100%;border-radius:14px;background:#0f2a12}
+.q{font-size:18px;font-weight:800;line-height:1.4;margin:8px 2px;text-align:center}
+.choices{display:flex;flex-direction:column;gap:8px}
+.c{border:0;border-radius:14px;padding:14px 10px;font-size:16px;font-weight:700;color:#fff;background:#2b3545;box-shadow:0 3px 0 #11161d;min-height:52px}
+.c:active{transform:translateY(3px);box-shadow:none}
+.c.right{background:#2e9e4f;box-shadow:0 3px 0 #1b6a33}
+.c.wrong{background:#c0392b;box-shadow:0 3px 0 #7d241b}
+.c[disabled]{pointer-events:none}
+.pop{position:absolute;pointer-events:none;font-size:26px;font-weight:900;color:#ffd54f;text-shadow:0 2px 0 #000;animation:pop .9s ease-out forwards;z-index:10}
+@keyframes pop{0%{transform:translateY(0) scale(.6);opacity:0}20%{opacity:1;transform:translateY(-10px) scale(1.2)}100%{transform:translateY(-80px) scale(1);opacity:0}}
+.flash{position:fixed;inset:0;pointer-events:none;opacity:0;z-index:5}
+.flash.g{background:radial-gradient(circle,rgba(76,217,100,.35),transparent 70%);animation:fl .4s}
+.flash.r{background:radial-gradient(circle,rgba(255,69,58,.35),transparent 70%);animation:fl .4s}
+@keyframes fl{0%{opacity:1}100%{opacity:0}}
+.bounce{animation:bn .45s}
+@keyframes bn{0%,100%{transform:scale(1)}40%{transform:scale(1.25) rotate(-6deg)}70%{transform:scale(.95) rotate(4deg)}}
+.shake{animation:sk .4s}
+@keyframes sk{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
+.stat{display:flex;justify-content:space-between;color:#9aa4b2;font-size:12px;margin-top:6px}
+.mute{position:absolute;right:14px;top:calc(env(safe-area-inset-top) + 8px);background:#222a35;border:0;color:#fff;border-radius:10px;padding:6px 10px;font-size:16px}
+@keyframes pulse{0%,100%{r:11}50%{r:14}}
+.hl{animation:pulse .8s infinite}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="flash" id="flash"></div>
+
+  <section class="screen on" id="title">
+    <button class="mute" id="muteT">🔊</button>
+    <h1>ソフトボール道場</h1>
+    <div class="sub">レベルを選んでスタート。終わりはない。やめたいときにやめろ。</div>
+    <div class="hero"><div class="face" id="heroFace"></div></div>
+    <div class="levels" id="levels"></div>
+  </section>
+
+  <section class="screen" id="game">
+    <div class="hud">
+      <button id="back">← もどる</button>
+      <span class="lvl" id="lvlName"></span>
+      <span class="sc" id="score">0</span>
+    </div>
+    <div class="combo"><div class="cbar"><i id="cfill"></i></div><div class="ctext" id="ctext"></div></div>
+    <div class="coach">
+      <div class="face" id="coachFace"></div>
+      <div class="bubble" id="bubble">さあ、いくぞ！</div>
+    </div>
+    <div id="fieldWrap" style="flex:1;min-height:0;display:flex"></div>
+    <div class="q" id="qtext"></div>
+    <div class="choices" id="choices"></div>
+    <div class="stat"><span id="stat1"></span><span id="stat2"></span></div>
+  </section>
+</div>
+
+<script>
+// ===== 顔画像: 同じフォルダに face.png を置くと表示される。なければ ⚾ =====
+function faceHTML(){
+  return '<img src="face.png" alt="" onerror="this.parentNode.textContent=\'⚾\'">';
+}
+
+// ===== 問題データ =====
+// [問題文, [選択肢], 正解index, 解説, {r:[走者の塁], f:1(守備位置表示), hl:'SS'}]
+const LV = {
+1:{name:'ルール入門',color:'#4dd0e1',q:[
+ ['守備側が3アウトを取ると？',['攻守交代','試合終了','1点入る'],0,'3アウトで攻撃と守備が入れ替わる。'],
+ ['得点になるのはどれ？',['ランナーが本塁を踏む','ランナーが三塁に着く','打者がヒットを打つ'],0,'ランナーがホームベースを踏んで1点。'],
+ ['打った後、打者が最初に目指す塁は？',['一塁','二塁','三塁'],0,'まず一塁を目指す。'],
+ ['塁を回る正しい順番は？',['一塁→二塁→三塁→本塁','三塁→二塁→一塁→本塁','本塁→三塁→二塁→一塁'],0,'反時計回りに一塁、二塁、三塁、本塁。'],
+ ['守備側は何人でプレーする？',['9人','11人','7人'],0,'守備は9人。ポジションも9つ。'],
+ ['試合の勝ちは？',['多く点を取った方','ヒットが多い方','三振が多い方'],0,'点を多く取ったチームの勝ち。'],
+ ['打者の打ったフライを、地面に落ちる前に捕った。',['打者アウト','セーフ','もう一度打てる'],0,'ノーバウンドで捕れば打者はアウト。'],
+ ['ソフトボールの投手の投げ方は？',['下手投げ','上手投げ','どちらでもよい'],0,'ソフトボールの投手は下手投げ。'],
+ ['ランナーが塁に触れている間、タッチされたら？',['セーフ','アウト','ボール'],0,'塁に触れている間は守られる。'],
+ ['1回の「表」はどっちの攻撃？',['先攻チーム','後攻チーム','両チーム'],0,'表は先攻、裏は後攻の攻撃。']
+]},
+2:{name:'カウント',color:'#81c784',q:[
+ ['ストライクが3つたまると？',['三振（アウト）','四球','ファウル'],0,'3ストライクで三振、打者アウト。'],
+ ['ボールが4つたまると？',['四球で一塁へ','三振','アウト'],0,'4ボールで打者は一塁へ歩ける（四球）。'],
+ ['打者が空振りした。',['ストライク','ボール','ファウル'],0,'空振りはストライク。'],
+ ['ストライクゾーンを通ったが、打者は見逃した。',['ストライク','ボール','ノーカウント'],0,'振らなくてもゾーンを通ればストライク。'],
+ ['ゾーンを外れ、打者は振らなかった。',['ボール','ストライク','アウト'],0,'ゾーン外を見逃すとボール。'],
+ ['0ストライクから、最初のファウルが出た。',['ストライクが1つ増える','ボールが1つ増える','カウントは変わらない'],0,'ファウルは基本ストライクとして数える。'],
+ ['2ストライクからのファウル（バント以外）。',['ストライクは増えない','三振になる','アウトになる'],0,'2ストライク後のファウルでは三振にならない。'],
+ ['3ボール2ストライクのことを何という？',['フルカウント','ツーアウト','満塁'],0,'フルカウント。次の球で勝負が決まる。'],
+ ['打球がフェアゾーンに入った。',['インプレイ','やり直し','ボール'],0,'フェアゾーンに入ればプレー続行（インプレイ）。'],
+ ['カウント表示のS・B・Oは？',['ストライク・ボール・アウト','スコア・ベース・オーバー','スピード・ボール・アウト'],0,'S=ストライク、B=ボール、O=アウト。']
+]},
+3:{name:'守備位置',color:'#ffb74d',q:[
+ ['内野手は何人？',['4人','3人','5人'],0,'一塁手、二塁手、三塁手、遊撃手の4人。'],
+ ['外野手は何人？',['3人','2人','4人'],0,'左翼手、中堅手、右翼手の3人。'],
+ ['投手の守備番号は？',['1','9','5'],0,'投手は1番。捕手は2番。'],
+ ['ここの名前は？',['遊撃手（ショート）','二塁手','三塁手'],0,'二塁と三塁の間を守るのが遊撃手。',{f:1,hl:'SS'}],
+ ['ここの名前は？',['中堅手（センター）','左翼手','右翼手'],0,'外野の真ん中は中堅手。',{f:1,hl:'Cn'}],
+ ['ここの名前は？',['右翼手（ライト）','左翼手','中堅手'],0,'一塁側の外野は右翼手。',{f:1,hl:'R'}],
+ ['ここの名前は？',['捕手（キャッチャー）','投手','審判'],0,'本塁の後ろでボールを受けるのが捕手。',{f:1,hl:'C'}],
+ ['ここの名前は？',['三塁手（サード）','一塁手','遊撃手'],0,'三塁ベース付近を守るのが三塁手。',{f:1,hl:'T'}],
+ ['ソフトボールの塁間は、野球より？',['短い','長い','同じ'],0,'塁間は野球の3分の2。だからプレーが速い。'],
+ ['守備番号6は？',['遊撃手','二塁手','左翼手'],0,'1投手 2捕手 3一塁 4二塁 5三塁 6遊撃 7左翼 8中堅 9右翼。'],
+ ['ソフトボールの一塁には特別なベースがある。何？',['ダブルベース（2枚つながり）','三角のベース','普通と同じ'],0,'一塁はダブルベースが使われるのが大きな違い。']
+]},
+4:{name:'アウトの種類',color:'#ba68c8',q:[
+ ['ゴロを捕った野手が、打者より先に一塁へボールを届けた。',['アウト','セーフ','ボール'],0,'打者走者より先に送球が一塁に届けばアウト。'],
+ ['一塁ランナーがいる。ゴロを捕って二塁ベースを踏んだ。',['タッチ不要でアウト','必ずタッチが必要','アウトにならない'],0,'走る義務のある走者は、ベースを踏めばアウト（フォースアウト）。',{r:[1]}],
+ ['二塁ランナーだけ。ゴロを捕った。二塁ランナーをアウトにするには？',['タッチが必要','ベースを踏めばよい','アウトにできない'],0,'一塁が空いていて進む義務がない。フォースにならずタッチが必要。',{r:[2]}],
+ ['満塁でゴロを捕った。一番楽なアウトの取り方は？',['本塁を踏む','三塁走者にタッチ','一塁に投げるしかない'],0,'満塁は全員に進む義務がある。本塁ベースを踏めばフォースアウト。',{r:[1,2,3]}],
+ ['ダブルプレー（併殺）とは？',['1つのプレーで2アウト','2回連続で三振','2点入ること'],0,'1つのプレーで2つのアウトを取ること。'],
+ ['三塁ランナー。フライが上がった。得点するには？',['捕球後に走る（タッチアップ）','捕球前に走り出す','走ってはいけない'],0,'捕球した後に塁を離れる。先に離れたら戻って触り直す必要がある。',{r:[3]}],
+ ['塁を離れているランナーが、ボールを持った野手にタッチされた。',['アウト','セーフ','ボール'],0,'塁に触れていなければタッチでアウト。'],
+ ['打者走者が一塁を駆け抜けた。',['そのままならアウトにならない','必ずアウト','得点になる'],0,'一塁だけは駆け抜けてもよい。二塁へ進もうとしたらタッチされる。'],
+ ['フライを捕球されたとき、ランナーがしなければいけないことは？',['元の塁へ戻って触り直す','そのまま走る','何もしなくてよい'],0,'タッチアップ。捕球後に元の塁に触れていれば進める。',{r:[1]}]
+]},
+5:{name:'応用',color:'#ff7043',q:[
+ ['三振の球を捕手が落とした。一塁は空いている。打者は？',['一塁へ走れる（振り逃げ）','三振で即アウト','四球扱い'],0,'一塁が空いていれば（または2アウトなら）走れる。'],
+ ['走者1・2塁、1アウト。高い内野フライで「インフィールドフライ」の宣告。打者は？',['捕れなくてもアウト','捕られなければセーフ','もう一度打つ'],0,'併殺を狙った故意の落球を防ぐルール。',{r:[1,2],o:1}],
+ ['満塁で四球。何が起きる？',['押し出しで1点','点は入らない','打者アウト'],0,'全員が1つずつ進み、三塁走者がホームインして1点。',{r:[1,2,3]}],
+ ['三塁ランナーがタッチアップでホームインした（フライは捕られた）。',['得点になる（犠牲フライ）','得点にならない','半分の点'],0,'打者はアウトだが、走者は得点できる。',{r:[3]}],
+ ['満塁ホームランで入る点は？',['4点','3点','1点'],0,'走者3人＋打者の4点。',{r:[1,2,3]}],
+ ['「盗塁」とは？',['打球なしで次の塁へ進むこと','塁を盗んで持ち帰ること','バットを替えること'],0,'打たずに進塁を狙うプレー。'],
+ ['三塁ランナーを返すための、バントでの作戦は？',['スクイズ','盗塁','犠牲フライ'],0,'三塁走者を本塁へ返すバントがスクイズ。',{r:[3]}],
+ ['ランナーを進めるためにバントしてアウトになる作戦は？',['送りバント','スクイズ','盗塁'],0,'打者が自分はアウトになる代わりに走者を進めるのが送りバント。',{r:[1]}],
+ ['2アウト。打者が一塁に着く前にアウトになり3アウト。同時に三塁走者が本塁を踏んだ。',['得点は認められない','得点が認められる','半分の点'],0,'打者走者が一塁に届く前の3アウト目は、その間の得点は認められない。',{r:[3],o:2}]
+]}
+};
+
+// ===== ユーティリティ =====
+const $=s=>document.querySelector(s);
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+function store(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}}
+
+// ===== 音 =====
+let ac=null,mute=false;
+function beep(f,d,t,v){if(mute)return;try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();const o=ac.createOscillator(),g=ac.createGain();o.type=t||'sine';o.frequency.value=f;g.gain.value=v||.15;o.connect(g);g.connect(ac.destination);o.start();g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+d);o.stop(ac.currentTime+d)}catch(e){}}
+const sOK=n=>{beep(600+Math.min(n,12)*40,.12);setTimeout(()=>beep(900+Math.min(n,12)*50,.18),90)};
+const sNG=()=>beep(180,.3,'sawtooth',.1);
+function vib(p){try{navigator.vibrate&&navigator.vibrate(p)}catch(e){}}
+
+// ===== フィールド描画 =====
+const BASE={0:[120,190],1:[175,135],2:[120,80],3:[65,135]};
+const POS={P:[120,142,'投'],C:[120,206,'捕'],F:[190,140,'一'],S:[150,98,'二'],T:[50,140,'三'],SS:[90,98,'遊'],L:[48,44,'左'],Cn:[120,24,'中'],R:[192,44,'右']};
+function fieldSVG(o){
+  o=o||{};
+  let s='<svg class="field" viewBox="0 0 240 215" preserveAspectRatio="xMidYMid meet">';
+  s+='<rect width="240" height="215" rx="14" fill="#2e7d32"/>';
+  s+='<polygon points="120,196 183,133 120,70 57,133" fill="#c68a4b"/>';
+  s+='<polygon points="120,190 175,135 120,80 65,135" fill="#3a8f3d"/>';
+  s+='<polyline points="120,190 240,70" stroke="#fff" stroke-width="1.5" fill="none" opacity=".7"/>';
+  s+='<polyline points="120,190 0,70" stroke="#fff" stroke-width="1.5" fill="none" opacity=".7"/>';
+  [1,2,3,0].forEach(k=>{const[x,y]=BASE[k];s+=`<rect x="${x-6}" y="${y-6}" width="12" height="12" fill="#fff" transform="rotate(45 ${x} ${y})"/>`});
+  if(o.f){Object.keys(POS).forEach(k=>{const[x,y,t]=POS[k];const h=o.hl===k;
+    s+=`<circle cx="${x}" cy="${y}" r="${h?11:8}" fill="${h?'#ff5252':'#1565c0'}" stroke="#fff" stroke-width="${h?2.5:1}" ${h?'class="hl"':''}/>`;
+    s+=`<text x="${x}" y="${y+3.5}" fill="#fff" font-size="${h?10:9}" font-weight="700" text-anchor="middle">${h?'？':t}</text>`})}
+  (o.r||[]).forEach(k=>{const[x,y]=BASE[k];s+=`<circle cx="${x}" cy="${y-2}" r="9" fill="#ffeb3b" stroke="#000" stroke-width="2"/><text x="${x}" y="${y+1.5}" font-size="9" font-weight="900" text-anchor="middle">走</text>`});
+  if(typeof o.o==='number'||o.r){const n=o.o||0;s+='<text x="8" y="16" fill="#fff" font-size="11" font-weight="700">OUT</text>';for(let i=0;i<2;i++)s+=`<circle cx="${40+i*14}" cy="12" r="5" fill="${i<n?'#ff5252':'none'}" stroke="#fff" stroke-width="1.5"/>`}
+  return s+'</svg>';
+}
+
+// ===== ゲーム状態 =====
+let lv=0,score=0,combo=0,maxCombo=0,right=0,total=0,bag=[],last=null,cur=null,t0=0,locked=false,timer=null;
+
+function pool(l){return l===0?[].concat(...Object.keys(LV).map(k=>LV[k].q.map(q=>[q,+k]))):LV[l].q.map(q=>[q,l])}
+function nextItem(){
+  if(!bag.length){bag=shuffle(pool(lv));if(last&&bag.length>1&&bag[bag.length-1][0]===last)bag.unshift(bag.pop())}
+  const it=bag.pop();last=it[0];return it;
+}
+
+function say(t){$('#bubble').textContent=t}
+function pop(txt){const el=document.createElement('div');el.className='pop';el.textContent=txt;el.style.left=(30+Math.random()*40)+'%';el.style.top='45%';$('#app').appendChild(el);setTimeout(()=>el.remove(),900)}
+function flash(c){const f=$('#flash');f.className='flash';void f.offsetWidth;f.className='flash '+c}
+function anim(el,c){el.classList.remove('bounce','shake');void el.offsetWidth;el.classList.add(c)}
+
+function updateHUD(){
+  $('#score').textContent=score;
+  const w=Math.min(combo,20)/20*100;$('#cfill').style.width=w+'%';
+  let r='';if(combo>=30)r='🔥伝説！';else if(combo>=20)r='🔥超一流';else if(combo>=10)r='⚡一流';else if(combo>=5)r='✨好調';else if(combo>=2)r=combo+'連続';
+  $('#ctext').textContent=r;
+  $('#stat1').textContent='正解 '+right+' / '+total;
+  $('#stat2').textContent='最大コンボ '+maxCombo;
+}
+
+function render(){
+  const [q,qlv]=nextItem();cur=q;locked=false;
+  const opt=q[4]||{};
+  $('#fieldWrap').innerHTML=fieldSVG(opt);
+  $('#qtext').textContent=q[0];
+  const idx=shuffle(q[1].map((_,i)=>i));
+  const box=$('#choices');box.innerHTML='';
+  idx.forEach(i=>{const b=document.createElement('button');b.className='c';b.textContent=q[1][i];b.dataset.i=i;b.onclick=()=>choose(b,i);box.appendChild(b)});
+  if(lv===0)$('#lvlName').textContent='MIX Lv'+qlv;
+  t0=Date.now();
+}
+
+function choose(btn,i){
+  if(locked)return;locked=true;total++;
+  const ok=i===cur[2];
+  const sec=(Date.now()-t0)/1000;
+  document.querySelectorAll('.c').forEach(b=>{b.disabled=true;if(+b.dataset.i===cur[2])b.classList.add('right')});
+  if(ok){
+    right++;combo++;maxCombo=Math.max(maxCombo,combo);
+    const bonus=sec<3?50:0;const gain=100+Math.min(combo,30)*10+bonus;
+    score+=gain;
+    pop('+'+gain);flash('g');sOK(combo);vib(20);anim($('#coachFace'),'bounce');
+    const msgs=['ナイス！','その調子！','いいぞ！','完璧！','さすが！'];
+    say((combo>=10?'止まらないな！':msgs[combo%msgs.length])+(bonus?' はやい！':''));
+    updateHUD();
+    timer=setTimeout(render,650);
+  }else{
+    combo=0;btn.classList.add('wrong');
+    sNG();vib([40,30,40]);flash('r');anim($('#coachFace'),'shake');anim($('#fieldWrap'),'shake');
+    say('惜しい！ '+cur[3]);
+    updateHUD();
+    const b=$('#choices');const nb=document.createElement('button');nb.className='c';nb.style.background='#3b4a63';nb.textContent='次へ ▶';nb.disabled=false;nb.onclick=()=>{clearTimeout(timer);render()};b.appendChild(nb);
+    timer=setTimeout(render,3200);
+  }
+}
+
+function start(l){
+  lv=l;score=0;combo=0;maxCombo=0;right=0;total=0;bag=[];last=null;
+  $('#lvlName').textContent=l===0?'MIX':'Lv'+l+' '+LV[l].name;
+  $('#title').classList.remove('on');$('#game').classList.add('on');
+  say('さあ、いくぞ！');updateHUD();render();
+}
+function quit(){
+  clearTimeout(timer);
+  const k='sd_best_'+lv;const b=+(store(k)||0);if(score>b)store(k,String(score));
+  $('#game').classList.remove('on');$('#title').classList.add('on');buildLevels();
+}
+
+function buildLevels(){
+  const w=$('#levels');w.innerHTML='';
+  Object.keys(LV).forEach(k=>{
+    const best=store('sd_best_'+k)||0;
+    const b=document.createElement('button');b.className='lv';b.style.setProperty('--c',LV[k].color);
+    b.innerHTML=`<b>Lv${k}</b><span>${LV[k].name}</span><small>BEST ${best}</small>`;
+    b.onclick=()=>start(+k);w.appendChild(b);
+  });
+  const m=document.createElement('button');m.className='lv';m.style.setProperty('--c','#ffd54f');
+  m.innerHTML=`<b>MIX</b><span>全レベルまぜまぜ</span><small>BEST ${store('sd_best_0')||0}</small>`;
+  m.onclick=()=>start(0);w.appendChild(m);
+}
+
+function toggleMute(){mute=!mute;document.querySelectorAll('.mute').forEach(b=>b.textContent=mute?'🔇':'🔊')}
+
+$('#heroFace').innerHTML=faceHTML();
+$('#coachFace').innerHTML=faceHTML();
+$('#back').onclick=quit;
+$('#muteT').onclick=toggleMute;
+buildLevels();
+</script>
+</body>
+</html>
